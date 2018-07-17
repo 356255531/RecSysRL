@@ -1,0 +1,3 @@
+package com.zhiwei.types.datasettypes.movielens
+
+object MovieLensDataSetBaseType extends MovieLensDataSetBaseTypeT
