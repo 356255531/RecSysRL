@@ -21,10 +21,13 @@ class ReplayQueue[Transition](
         Some(
           List.fill(realBatchSize)(memoryQueue(randomSeed.nextInt(memoryQueue.size)))
         )
-      (0 until realBatchSize / 4)
-        .foreach(idx => memoryQueue.dequeue())
-      retBatch
 
+//      (0 until batchSize / 10)
+//          .foreach(
+//            _ => memoryQueue.dequeue()
+//          )
+
+      retBatch
     }
   }
 

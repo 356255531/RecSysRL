@@ -89,7 +89,7 @@ class GenomeTagsCollectionReader(
                                   insertElement: InsertElement
                                 ): Document =  {
       val doc = new Document()
-      doc.append("tagId", insertElement("tagId").toLong)
+      doc.append("tagId", insertElement("tagId").toInt)
       doc.append("tag", insertElement("tag"))
       doc
     }

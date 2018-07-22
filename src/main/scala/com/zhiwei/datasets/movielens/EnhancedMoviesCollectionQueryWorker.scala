@@ -59,7 +59,7 @@ class EnhancedMoviesCollectionQueryWorker(
   }
 
   def getDocsToSave(movieDocs: Documents): Documents = {
-    val movieIds = movieDocs.map(_.get("movieId", classOf[java.lang.Long]).toLong)
+    val movieIds = movieDocs.map(_.get("movieId", classOf[java.lang.Integer]).toInt)
     val movieIdQueries = movieIds.map(new Document("movieId", _))
 
     val ratingDocsIterators: List[MongoCursor[Document]] =
@@ -90,7 +90,7 @@ class EnhancedMoviesCollectionQueryWorker(
                 .foreach(
                   genomeScoreDoc =>
                     doc.append(
-                      genomeScoreDoc.get("tagId", classOf[java.lang.Long]).toString,
+                      genomeScoreDoc.get("tagId", classOf[java.lang.Integer]).toString,
                       genomeScoreDoc.get("relevance", classOf[java.lang.Double]).toDouble
                     )
                 )
@@ -103,7 +103,7 @@ class EnhancedMoviesCollectionQueryWorker(
       .map(
         idx => {
           val doc = new Document(movieDocs(idx))
-          doc.append("numRating", numRatings(idx).toLong)
+          doc.append("numRating", numRatings(idx))
           doc.append("averageRating", averageRatings(idx))
           doc.append("genomeScores", genomeScorePerUser(idx))
           doc

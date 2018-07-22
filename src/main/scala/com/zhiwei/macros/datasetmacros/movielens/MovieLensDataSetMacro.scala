@@ -21,8 +21,8 @@ trait MovieLensDataSetMacro {
   val enhancedMoviesCollectionName: String = "EnhancedMovies" // add numRating, averageRating, genomeScores to movies
 
   val movieFeaturesCollectionName: String = "MovieFeatures" // movies with feature vectors
+  val centroidsCollectionName: String = "Centroids" // Class centroids
   val movieClassFeaturesCollectionName: String = "MovieClassFeatures"
-  val userHistoriesCollectionName: String = "UserHistories"
 
   // Feature vector entry numbers
   val numAverageRatingFeatureEntry: Int = 1
@@ -107,10 +107,10 @@ trait MovieLensDataSetMacro {
   val enhancedMoviesCollectionDescendIndexes: List[String] = emptyIndexes
   val movieFeaturesCollectionAscendIndexes: List[String] = List("movieId", "movieIdx", "featureVector")
   val movieFeaturesCollectionDescendIndexes: List[String] = emptyIndexes
+  val centroidsCollectionAscendIndexes: List[String] = List("class")
+  val centroidsCollectionDescendIndexes: List[String] = emptyIndexes
   val movieClassFeaturesCollectionAscendIndexes: List[String] = List("movieId", "class")
   val movieClassFeaturesCollectionDescendIndexes: List[String] = emptyIndexes
-  val userHistoriesCollectionAscendIndexes: List[String] = List("userId")
-  val userHistoriesCollectionDescendIndexes: List[String] = emptyIndexes
 
   // Debug symbol
   val TIME_DEBUG: Boolean

@@ -1,19 +1,16 @@
 package com.zhiwei.rl.trainers
 
 import akka.actor.ActorRef
-import com.zhiwei.rl.policys.PolicyT
 
-object TrainerT {
-  final case object TrainRequest
-}
-
-trait TrainerT[Action] {
+trait TrainerT {
   val trainerName: String
 
-  val numAgent: Int
-  val agentRouterActorRef: ActorRef
+  val numWorker: Int
+  val workerRouterActorRef: ActorRef
 
-  val policy: PolicyT
-
-  def ifLearnTerminated: Boolean
+  // To determine when training ends
+  var numTrainEpisode = 0
+  val numTrainEpisodeThreshold = 10000000
+  def ifLearnTerminated: Boolean =
+    numTrainEpisode > numTrainEpisodeThreshold
 }

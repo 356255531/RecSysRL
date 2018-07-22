@@ -4,67 +4,75 @@ import akka.actor.{ActorRef, ActorSystem}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-
 import com.zhiwei.configs.datasetconfigs.{DataSetConfigT, MovieLensLargeDataSetConfig}
-import com.zhiwei.configs.dqnconfigs.DQNConfigT
+import com.zhiwei.configs.networkconfigs.NetworkConfigT
 import com.zhiwei.configs.recsysconfigs.RecSysConfigT
 import com.zhiwei.configs.replayqueueconfigs.ReplayQueueConfigT
 import com.zhiwei.configs.rlconfigs.{ItemBasedDQNMovieLensRLConfig, RLConfigT}
 import com.zhiwei.configs.trainerconfigs.{ItemBasedDQNMovieLensTrainerConfig, TrainerConfigT}
-import com.zhiwei.configs.{dqnconfigs, recsysconfigs, replayqueueconfigs}
+import com.zhiwei.configs.{networkconfigs, recsysconfigs, replayqueueconfigs}
 import com.zhiwei.macros.datasetmacros.movielens.{MovieLensDataSetMacro, MovieLensLargeDataSetMacro}
 import com.zhiwei.macros.nnmacros.ItemBasedDQNMovieLensNNMacro
 import com.zhiwei.macros.rlmacros.movielens.ItemBasedDQNMovieLensNGramRLMacro
-import com.zhiwei.rl.stateencoders.PosNegNGramStateEncoder
-import com.zhiwei.rl.trainers.TrainerT.TrainRequest
-import com.zhiwei.rl.trainers.dqntrainers.ItemBasedDQNMovieLensTrainerActor
-import com.zhiwei.rl.policys.movielens.ItemBasedDQNMovieLensPolicy
-import com.zhiwei.rl.rewardfunctions.movielens.hitMovieReward
-import com.zhiwei.types.datasettypes.movielens.MovieLensDataSetBaseType.MovieIds
-import com.zhiwei.types.rltypes.movielens.ItemBasedDQNMovieLensRLType.{History, Reward}
+import com.zhiwei.rl.stateencoders.NGramStateEncoder
+import com.zhiwei.rl.trainers.movielens.ItemBasedDQNMovieLensTrainerActor
+import com.zhiwei.rl.policys.movielens.ItemBasedDoubleDQNMovieLensMovieLensPolicy
+import com.zhiwei.rl.rewardfunctions.movielens.hitMovieNotNegReward
+import com.zhiwei.rl.trainers.movielens.apis.SynchronousMovieLensDQNTrainerActorT.TrainRequest
+import com.zhiwei.types.datasettypes.movielens.MovieLensDataSetBaseType.MovieId
+import com.zhiwei.types.rltypes.DQNType.{History, Reward}
 import com.zhiwei.utils.loadNetwork
 
 object ItemBasedDQNMovieLensRecSys extends App {
   val dataSetConfig: DataSetConfigT = MovieLensLargeDataSetConfig
   val recSysConfig: RecSysConfigT = recsysconfigs.Config_1
-  val dQNConfig: DQNConfigT = dqnconfigs.Config_1
+  val networkConfig: NetworkConfigT = networkconfigs.SynItemBasedMovieLensDQNConfig
   val replayQueueConfig: ReplayQueueConfigT = replayqueueconfigs.Config_1
   val rLConfig: RLConfigT = ItemBasedDQNMovieLensRLConfig
   val trainerConfig: TrainerConfigT = ItemBasedDQNMovieLensTrainerConfig
 
-  val rewardFunction: (MovieIds, History) =>  Reward =
-    hitMovieReward(recSysConfig.ratingThreshold)
+  val rewardFunction: (List[MovieId], History) =>  Reward =
+    hitMovieNotNegReward(recSysConfig.ratingThreshold)
 
   val dataSetMacro: MovieLensDataSetMacro = MovieLensLargeDataSetMacro
   val rLMacro =
     new ItemBasedDQNMovieLensNGramRLMacro(
       dataSetMacro.numObservationEntry,
       rLConfig.N,
-      PosNegNGramStateEncoder.getNextState,
+      NGramStateEncoder.getNextState,
       rewardFunction
     )
   val nNMacro =
     new ItemBasedDQNMovieLensNNMacro(
-      dQNConfig,
+      networkConfig,
       dataSetMacro,
       rLConfig
     )
 
-  val dqn = loadNetwork(nNMacro.filePath, nNMacro.nnConfig)
+  val dQN = loadNetwork(networkConfig.fileName, nNMacro.nnConfig)
+  dQN.init()
 
   val trainSystemName = "ItemBasedMovieLensDQNRecSys"
   val trainSystem = ActorSystem(trainSystemName)
 
-  val dQNPolicy = new ItemBasedDQNMovieLensPolicy(rLConfig, recSysConfig, dataSetMacro, dqn)
+  val dQNPolicy: ItemBasedDoubleDQNMovieLensMovieLensPolicy =
+    new ItemBasedDoubleDQNMovieLensMovieLensPolicy(
+      recSysConfig,
+      dataSetMacro,
+      rLConfig,
+      dQN,
+      dQN.clone
+    )
 
   val trainerActorRef: ActorRef =
     trainSystem.actorOf(
       ItemBasedDQNMovieLensTrainerActor.props(
-        rLConfig,
         recSysConfig,
         replayQueueConfig,
         dataSetMacro,
         rLMacro,
+        rLConfig,
+        networkConfig,
         dQNPolicy
       ),
       "ItemBasedMovieLensDQNTrainerActor"

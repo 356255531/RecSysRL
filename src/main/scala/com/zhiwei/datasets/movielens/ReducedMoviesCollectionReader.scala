@@ -47,10 +47,10 @@ class ReducedMoviesCollectionReader(
       .getDatabase(dBName)
       .getCollection(reducedRatingsCollectionName)
 
-  val reducedRatingMovieIdsIterator: MongoCursor[java.lang.Long] =
-    reducedRatingsCollection.distinct("movieId", classOf[java.lang.Long]).iterator
-  val reducedRatingMovieIds: List[Long] =
-    convertMongoCursor2Anys(reducedRatingMovieIdsIterator).map(_.toLong)
+  val reducedRatingMovieIdsIterator: MongoCursor[java.lang.Integer] =
+    reducedRatingsCollection.distinct("movieId", classOf[java.lang.Integer]).iterator
+  val reducedRatingMovieIds: List[Int] =
+    convertMongoCursor2Anys(reducedRatingMovieIdsIterator).map(_.toInt)
 
   val readIterator: MongoCursor[Document] = moviesCollection.find.sort(new Document("movieId", 1)).iterator
 
@@ -85,7 +85,7 @@ class ReducedMoviesCollectionReader(
       movieDocs.filter(
         movieDoc =>
           reducedRatingMovieIds.contains(
-            movieDoc.get("movieId", classOf[java.lang.Long]).toLong
+            movieDoc.get("movieId", classOf[java.lang.Integer]).toInt
           )
       )
 
@@ -93,7 +93,7 @@ class ReducedMoviesCollectionReader(
 
     reducedMovieDocs.foreach(
       doc => {
-        doc.append("movieIdx", counter.toLong)
+        doc.append("movieIdx", counter.toInt)
         counter += 1
 
 

@@ -41,9 +41,9 @@ class ReducedRatingsCollectionQueryWorker(
       .getDatabase(dBName)
       .getCollection(genomeScoresCollectionName)
 
-  val genomeScoreMovieIdsIterator: MongoCursor[java.lang.Long] =
-    genomeScoresCollection.distinct("movieId", classOf[java.lang.Long]).iterator
-  val genomeScoreMovieIds: List[Long] = convertMongoCursor2Anys(genomeScoreMovieIdsIterator).map(_.toLong)
+  val genomeScoreMovieIdsIterator: MongoCursor[java.lang.Integer] =
+    genomeScoresCollection.distinct("movieId", classOf[java.lang.Integer]).iterator
+  val genomeScoreMovieIds: List[Int] = convertMongoCursor2Anys(genomeScoreMovieIdsIterator).map(_.toInt)
 
   override def postStop(): Unit = {
     client.close()
@@ -56,7 +56,7 @@ class ReducedRatingsCollectionQueryWorker(
         .filter(
           ratingDoc =>
             genomeScoreMovieIds
-              .contains(ratingDoc.get("movieId", classOf[java.lang.Long]).toLong)
+              .contains(ratingDoc.get("movieId", classOf[java.lang.Integer]).toInt)
         )
 
     reducedRatingDocs

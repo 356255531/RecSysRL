@@ -1,60 +1,54 @@
-package org.deeplearning4j.examples.misc.externalerrors
+package com.zhiwei
 
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr
-import org.nd4j.linalg.learning.config.Nesterovs
-import org.nd4j.linalg.primitives.Pair
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration
-import org.deeplearning4j.nn.conf.Updater
-import org.deeplearning4j.nn.conf.layers.DenseLayer
-import org.deeplearning4j.nn.gradient.Gradient
+import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration}
+import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.activations.Activation
-import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.learning.config.Nesterovs
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
+object EZTest extends App {
+  val nnConfig: MultiLayerConfiguration =
+    new NeuralNetConfiguration.Builder()
+      .seed(12345)
+      .weightInit(WeightInit.XAVIER)
+      .updater(new Nesterovs(0.001, 0.9))
+      .list()
+      .layer(
+        0,
+        new DenseLayer
+        .Builder()
+          .nIn(400000)
+          .nOut(2000)
+          .activation(Activation.RELU)
+          .build()
+      )
+      .layer(
+        1,
+        new DenseLayer
+        .Builder()
+          .nIn(2000)
+          .nOut(5000)
+          .activation(Activation.RELU)
+          .build()
+      )
+      .layer(
+        2,
+        new OutputLayer
+        .Builder(LossFunction.MSE)
+          .activation(Activation.IDENTITY)
+          .nIn(5000)
+          .nOut(200)
+          .build()
+      )
+      .pretrain(false)
+      .backprop(true)
+      .build()
 
-/**
-  * This example: shows how to train a MultiLayerNetwork where the errors come from an external source, instead
-  * of using an Output layer and a labels array.
-  * <p>
-  * Possible use cases for this are reinforcement learning and testing/development of new algorithms.
-  * <p>
-  * For some uses cases, the following alternatives may be worth considering:
-  * - Implement a custom loss function
-  * - Implement a custom (output) layer
-  * <p>
-  * Both of these alternatives are available in DL4J
-  *
-  * @author Alex Black
-  */
-object MultiLayerNetworkExternalErrors {
-  def main(args: Array[String]): Unit = { //Create the model
-    val nIn = 4
-    val nOut = 3
-    Nd4j.getRandom.setSeed(12345)
-    val conf = new NeuralNetConfiguration.Builder().seed(12345).activation(Activation.TANH).weightInit(WeightInit.XAVIER).updater(new Nesterovs(0.1)).list.layer(0, new DenseLayer.Builder().nIn(nIn).nOut(3).build).layer(1, new DenseLayer.Builder().nIn(3).nOut(3).build).backprop(true).pretrain(false).build
-    val model = new MultiLayerNetwork(conf)
-    model.init()
-    //Calculate gradient with respect to an external error
-    val minibatch = 32
-    val input = Nd4j.rand(minibatch, nIn)
-    model.setInput(input)
-    //Do forward pass, but don't clear the input activations in each layers - we need those set so we can calculate
-    // gradients based on them
-    model.feedForward(true, false)
-    val externalError = Nd4j.rand(minibatch, nOut)
-    val p = model.backpropGradient(externalError, null)
-    //Calculate backprop gradient based on error array
-    //Update the gradient: apply learning rate, momentum, etc
-    //This modifies the Gradient object in-place
-    val gradient = p.getFirst
-    val iteration = 0
-    val epoch = 0
-    model.getUpdater.update(model, gradient, iteration, epoch, minibatch, LayerWorkspaceMgr.noWorkspaces)
-    //Get a row vector gradient array, and apply it to the parameters to update the model
-    val updateVector = gradient.gradient
-    model.params.subi(updateVector)
-  }
+  val nn = new MultiLayerNetwork(nnConfig)
+  nn.init()
+
+  println(nn.output(Nd4j.rand(10, 400000)))
 }

@@ -6,8 +6,10 @@ import org.nd4j.linalg.indexing.NDArrayIndex
 
 object NGramStateEncoder extends {
   def getNextState(
-                  state: INDArray,
-                  observation: INDArray
+                    state: INDArray,
+                    observation: INDArray,
+                    rating: Double,
+                    ratingThreshold: Double
                   ): INDArray = {
     val stateShape = state.shape
     val observationShape = observation.shape

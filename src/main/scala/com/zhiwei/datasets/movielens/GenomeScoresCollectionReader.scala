@@ -112,7 +112,7 @@ class GenomeScoresCollectionReader(
                                 ): Document =  {
       val doc = new Document()
 
-      val tagId = insertElement("tagId").toLong
+      val tagId = insertElement("tagId").toInt
       val tag =
         genomeTagsCollection
           .find(new Document("tagId", tagId))
@@ -122,8 +122,8 @@ class GenomeScoresCollectionReader(
           .get("tag")
       doc.append("tag", tag)
 
-      doc.append("tagId", insertElement("tagId").toLong)
-      doc.append("movieId", insertElement("movieId").toLong)
+      doc.append("tagId", insertElement("tagId").toInt)
+      doc.append("movieId", insertElement("movieId").toInt)
       doc.append("relevance", insertElement("relevance").toDouble)
 
       doc

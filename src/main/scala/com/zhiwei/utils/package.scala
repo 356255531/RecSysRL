@@ -10,14 +10,17 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance
 import org.nd4j.linalg.factory.Nd4j
 import org.deeplearning4j.util.ModelSerializer
 
-
 import scala.collection.mutable.ListBuffer
-import scala.collection.immutable.Queue
-
 import com.zhiwei.rl.networks.Network
+import com.zhiwei.types.rltypes.RLBaseTypeT.State
 
 
 package object utils {
+  def convertState2NNInput(state: State): INDArray = {
+    val shape = state.shape
+    state.dup().reshape(1, shape(0) * shape(1))
+  }
+
   def convertMongoCursor2Anys[A](iterator: MongoCursor[A]): List[A] = {
     var anys: ListBuffer[A] = ListBuffer()
     while (iterator.hasNext) {
@@ -88,23 +91,15 @@ package object utils {
     val file = new File(modelPath)
 
     if (!file.isFile) {
-      println("Create new network!")
-      new Network(new MultiLayerNetwork(conf))
+      val network = new Network(new MultiLayerNetwork(conf), "global")
+      println("Create new succ!")
+      network
     }
     else {
-      println("Load network from file!")
       val model = ModelSerializer.restoreMultiLayerNetwork(modelPath)
-      new Network(model)
+      val network = new Network(model, "global")
+      println("Load network succ!")
+      network
     }
   }
-
-  class FiniteQueue[A](q: Queue[A]) {
-    def enqueueFinite[B >: A](elem: B, maxSize: Int): Queue[B] = {
-      var ret = q.enqueue(elem)
-      while (ret.size > maxSize) { ret = ret.dequeue._2 }
-      ret
-    }
-  }
-  implicit def queue2FiniteQueue[A](q: Queue[A]): FiniteQueue[A] =
-    new FiniteQueue[A](q)
 }

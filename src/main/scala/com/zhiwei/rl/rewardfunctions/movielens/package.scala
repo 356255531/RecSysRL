@@ -1,23 +1,44 @@
 package com.zhiwei.rl.rewardfunctions
 
-import com.zhiwei.types.datasettypes.movielens.MovieLensDataSetBaseType.RatingThreshold
-import com.zhiwei.types.dbtypes.DBBaseType.Documents
-import com.zhiwei.types.rltypes.RLBaseType.{History, Reward}
+import com.zhiwei.types.datasettypes.movielens.MovieLensDataSetBaseType.{RatingThreshold, MovieIdx}
+import com.zhiwei.types.rltypes.RLBaseTypeT.{History, Reward}
 
 package object movielens {
   def hitMovieReward(ratingThreshold: RatingThreshold)(
-    recommendedMovieIds: List[Long],
+    recommendedMovieIndexes: List[MovieIdx],
     unvisitedDocs: History
   ): Reward = {
 
-    val recommendedMovieIdSet: Set[Long] = recommendedMovieIds.toSet
+    val recommendedMovieIdSet: Set[MovieIdx] = recommendedMovieIndexes.toSet
 
-    val relatedMovieIdSet =
+    val relevantMovieIdSet: Set[MovieIdx] =
       unvisitedDocs
           .filter(_.get("rating", classOf[java.lang.Double]).toDouble > ratingThreshold)
-          .map(_.get("movieId", classOf[java.lang.Long]).toLong)
+          .map(_.get("movieIdx", classOf[java.lang.Integer]).toInt)
           .toSet
 
-    (recommendedMovieIdSet intersect relatedMovieIdSet).size
+    (recommendedMovieIdSet intersect relevantMovieIdSet).size
+  }
+
+  def hitMovieNotNegReward(ratingThreshold: RatingThreshold)(
+    recommendedMovieIndexes: List[MovieIdx],
+    unvisitedDocs: History
+  ): Reward = {
+
+    val recommendedMovieIdSet: Set[MovieIdx] = recommendedMovieIndexes.toSet
+
+    val relevantMovieIdSet: Set[MovieIdx] =
+      unvisitedDocs
+        .filter(_.get("rating", classOf[java.lang.Double]).toDouble > ratingThreshold)
+        .map(_.get("movieIdx", classOf[java.lang.Integer]).toInt)
+        .toSet
+
+    val unrelevantMovieIdSet: Set[MovieIdx] =
+      unvisitedDocs
+        .filter(_.get("rating", classOf[java.lang.Double]).toDouble <= ratingThreshold)
+        .map(_.get("movieIdx", classOf[java.lang.Integer]).toInt)
+        .toSet
+
+    2 * (recommendedMovieIdSet intersect relevantMovieIdSet).size - (recommendedMovieIdSet intersect unrelevantMovieIdSet).size
   }
 }

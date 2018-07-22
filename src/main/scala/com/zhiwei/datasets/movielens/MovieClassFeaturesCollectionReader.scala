@@ -44,6 +44,7 @@ class MovieClassFeaturesCollectionReader(
   val dBName:String = dataSetMacro.dBName
   val movieClassFeatureCollectionName: String = dataSetMacro.movieClassFeaturesCollectionName
   val movieFeaturesCollectionName: String = dataSetMacro.movieFeaturesCollectionName
+  val centroidsCollectionName: String = dataSetMacro.centroidsCollectionName
   val saveBatchSize: Int = dataSetMacro.saveBatchSize
 
   var numQueryRequestNoResponse = 0
@@ -53,6 +54,10 @@ class MovieClassFeaturesCollectionReader(
     client
       .getDatabase(dBName)
       .getCollection(movieFeaturesCollectionName)
+  val centroidsCollection: MongoCollection[Document] =
+    client
+      .getDatabase(dBName)
+      .getCollection(centroidsCollectionName)
 
   val readIterator: MongoCursor[Document] =
     movieFeaturesCollection
@@ -61,10 +66,33 @@ class MovieClassFeaturesCollectionReader(
 
   var workDone: Boolean = !readIterator.hasNext
 
+  // Compute centroids and save to database
   val centroidMatrix: INDArray = MiniBatchKMeansCluster.getCentroidMatrix(
     movieFeaturesCollection,
     clusterConfig
   )
+  centroidsCollection.drop()
+  (0 until centroidMatrix.shape()(0))
+    .foreach(
+      idx => {
+        val centroidDoc: Document = new Document("class", idx)
+        centroidDoc.append("centroid", centroidMatrix.getRow(idx))
+        centroidsCollection.insertOne(centroidDoc)
+      }
+    )
+  dataSetMacro
+    .centroidsCollectionAscendIndexes
+      .foreach(
+        idx =>
+          centroidsCollection.createIndex(new Document(idx, 1))
+      )
+  dataSetMacro
+    .centroidsCollectionDescendIndexes
+    .foreach(
+      idx =>
+        centroidsCollection.createIndex(new Document(idx, 0))
+    )
+
 
   val queryReadWorkerRouter: ActorRef = context.actorOf(
     BalancingPool(numQueryWorkers).props(

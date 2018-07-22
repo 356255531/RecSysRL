@@ -89,8 +89,8 @@ class RatingsCollectionReader(
       .map(
         insertElement => {
           val doc = new Document()
-          doc.append("userId", insertElement("userId").toLong)
-          doc.append("movieId", insertElement("movieId").toLong)
+          doc.append("userId", insertElement("userId").toInt)
+          doc.append("movieId", insertElement("movieId").toInt)
           doc.append("rating", insertElement("rating").toDouble)
           doc.append("timestamp", insertElement("timestamp").toLong)
           doc

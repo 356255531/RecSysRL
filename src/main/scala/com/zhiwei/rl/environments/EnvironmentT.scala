@@ -1,11 +1,11 @@
 package com.zhiwei.rl.environments
 
-import com.zhiwei.types.rltypes.RLBaseType.Observation
+import com.zhiwei.types.rltypes.RLBaseTypeT.Observation
 
-trait EnvironmentT[Action] {
+trait EnvironmentT {
   var done: Boolean
 
   def init(): Observation
 
-  def step(action: Action): Any
+  def step[Action](action: Action): Any
 }

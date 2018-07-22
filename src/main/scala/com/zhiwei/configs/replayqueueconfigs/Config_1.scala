@@ -1,7 +1,6 @@
 package com.zhiwei.configs.replayqueueconfigs
 
-object Config_1 extends ReplayQueueConfigT{
-//  val minGetBatchSize = 33
-  val minGetBatchSize = 9600
-  val queueSize = 9600
+object Config_1 extends ReplayQueueConfigT {
+  val minGetBatchSize = 10000
+  val queueSize = 16000
 }

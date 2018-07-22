@@ -1,21 +1,33 @@
 package com.zhiwei.rl.networks
 
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration
+import java.io.File
+
+import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration}
 import org.deeplearning4j.nn.gradient.Gradient
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr
 import org.deeplearning4j.util.ModelSerializer
-
 import org.nd4j.linalg.api.ndarray.INDArray
 
-class Network(neuralNetwork: MultiLayerNetwork) {
-  var ifInit: Boolean = false
+object Network {
+  val conf: MultiLayerConfiguration =
+    new NeuralNetConfiguration.Builder()
+      .list()
+      .build()
+  def getPseudoNetwork: Network = {
+    new Network(new MultiLayerNetwork(conf), "local")
+  }
+}
+
+class Network(neuralNetwork: MultiLayerNetwork, scope: String) {
+  var ifInit: Boolean = neuralNetwork.isInitCalled
+  init()
 
   /**
     * randomize the weights of neural network
     */
   def init(): Unit =
-    neuralNetwork.init()
+    if (!ifInit) neuralNetwork.init()
 
   /**
     * fit from input and labels
@@ -26,7 +38,7 @@ class Network(neuralNetwork: MultiLayerNetwork) {
   def fit(input: INDArray, labels: INDArray): Double = {
     neuralNetwork.fit(input, labels)
     val prediction = neuralNetwork.output(input)
-    labels.squaredDistance(prediction)
+    scala.math.sqrt(labels.squaredDistance(prediction) / input.shape()(0))
   }
 
   /**
@@ -66,17 +78,7 @@ class Network(neuralNetwork: MultiLayerNetwork) {
     val epochCount = neuralNetwork.getEpochCount
     neuralNetwork.getUpdater.update(neuralNetwork, gradients,
       iterationCount, epochCount, batchSize, LayerWorkspaceMgr.noWorkspaces)
-    neuralNetwork.params.sub(gradients.gradient)
-    val iterationListeners = neuralNetwork.getListeners
-    if (iterationListeners != null && iterationListeners.size > 0)
-      iterationListeners
-        .forEach(
-          _.iterationDone(
-            neuralNetwork,
-            iterationCount,
-            epochCount)
-        )
-    neuralNetworkConfiguration.setIterationCount(iterationCount + 1)
+    neuralNetwork.params.subi(gradients.gradient)
   }
 
   /**
@@ -84,14 +86,12 @@ class Network(neuralNetwork: MultiLayerNetwork) {
     *
     * @param filePath filepath to save in
     */
-  def save(filePath: String, iteration: Long): Unit = {
-    ModelSerializer.writeModel(
-      neuralNetwork,
-      filePath,
-      true
-    )
+  def save(fileName: String): Unit = {
+    val file: File = new File(fileName)       //Where to save the network. Note: the file is in .zip format - can be opened externally
+    val saveUpdater: Boolean = true           //Updater: i.e., the state for Momentum, RMSProp, Adagrad etc. Save this if you want to train your network more in the future
+    ModelSerializer.writeModel(neuralNetwork, file, saveUpdater)
   }
 
   override def clone: Network =
-    new Network(neuralNetwork.clone())
+    new Network(neuralNetwork.clone(), "local")
 }

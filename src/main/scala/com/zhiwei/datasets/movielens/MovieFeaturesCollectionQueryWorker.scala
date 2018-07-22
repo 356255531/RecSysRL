@@ -69,7 +69,7 @@ class MovieFeaturesCollectionQueryWorker(
     Nd4j.create(yearArray)
   }
 
-  def convertNumRating2ContentFeature(numRating: Long): INDArray = {
+  def convertNumRating2ContentFeature(numRating: Int): INDArray = {
     val numRatingsArray = Array.fill[Double](5)(0)
     numRating match {
       case a if a < 10 =>
@@ -115,7 +115,7 @@ class MovieFeaturesCollectionQueryWorker(
       val years = movieDocs.map(_.get("year", classOf[java.lang.Integer]).toInt)
       val yearVectors = years.map(convertYear2ContentFeature)
 
-      val numRatings = movieDocs.map(_.get("numRating", classOf[java.lang.Long]).toLong)
+      val numRatings = movieDocs.map(_.get("numRating", classOf[java.lang.Integer]).toInt)
       val numRatingVectors = numRatings.map(convertNumRating2ContentFeature)
 
       val averageRatings = movieDocs.map(_.get("averageRating", classOf[java.lang.Double]).toDouble)

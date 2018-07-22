@@ -112,7 +112,7 @@ class MoviesCollectionReader(
       val doc = new Document()
       insertElement.foreach(kv => doc.append(kv._1, kv._2))
 
-      val movieId = doc.get("movieId", classOf[String]).toLong
+      val movieId = doc.get("movieId", classOf[String]).toInt
       doc.remove("movieId")
       doc.append("movieId", movieId)
 
